@@ -72,12 +72,24 @@ kernel_release_file="$brunch/kernels/6.12/out/include/config/kernel.release"
 }
 
 kernel_release="$(cat "$kernel_release_file")"
+if [ ! -f "$repo/configs/packages/vm-vulkan.tar.gz" ]; then
+	bash "$repo/scripts/build-vm-vulkan.sh"
+fi
+if [ ! -f "$repo/configs/packages/kernel-$kernel_release.tar.gz" ]; then
+	bash "$repo/scripts/build-vm-kernel.sh" package
+fi
 packages=(
 	"$repo/configs/packages/kernel-$kernel_release.tar.gz"
 	"$repo/configs/packages/vm-vulkan.tar.gz"
 )
 settings="$repo/configs/settings-qemu.cfg"
 if [ "$target" = vmware ]; then
+	if [ ! -f "$repo/configs/packages/vm-minigbm.tar.gz" ]; then
+		bash "$repo/scripts/build-minigbm.sh"
+	fi
+	if [ ! -f "$repo/configs/packages/vm-tools.tar.gz" ]; then
+		bash "$repo/scripts/build-vm-tools.sh"
+	fi
 	packages+=(
 		"$repo/configs/packages/vm-minigbm.tar.gz"
 		"$repo/configs/packages/vm-tools.tar.gz"

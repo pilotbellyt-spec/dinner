@@ -1,0 +1,5 @@
+FROM registry.fedoraproject.org/fedora-toolbox:44
+
+RUN dnf install -y \
+	curl python3 e2fsprogs erofs-utils gcc lz4-libs mtools pv qemu-img vboot-utils \
+	&& dnf clean all

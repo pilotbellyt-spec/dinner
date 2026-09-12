@@ -62,10 +62,16 @@ baseline="$repo/baseline/r151"
 brunch="$repo/brunch"
 kernel="$brunch/kernels/6.12/out/arch/x86/boot/bzImage"
 kernel_release_file="$brunch/kernels/6.12/out/include/config/kernel.release"
-[ -f "$baseline/chromeos-install.sh" ] && [ -f "$baseline/rootc.img" ] || {
-	echo "extract the R151 Brunch release under $baseline"
-	exit 1
-}
+if [ ! -f "$baseline/chromeos-install.sh" ] || [ ! -f "$baseline/rootc.img" ]; then
+	command -v wget >/dev/null || {
+		echo "ERROR: The following dependencies are not installed: wget" >&2
+		exit 1
+	}
+	mkdir -p "$baseline"
+	wget -qO- \
+		"https://github.com/sebanc/brunch/releases/download/r151-stable-20260823/brunch_r151_stable_20260823.tar.gz" |
+		tar -xz -C "$baseline"
+fi
 [ -f "$kernel" ] && [ -f "$kernel_release_file" ] || {
 	echo "build the VM kernel with scripts/build-vm-kernel.sh all"
 	exit 1

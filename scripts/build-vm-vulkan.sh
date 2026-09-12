@@ -39,7 +39,7 @@ file "$library" | grep -q 'ELF 64-bit.*x86-64' || {
 	echo "$library is not an x86-64 shared library"
 	exit 1
 }
-readelf -Ws "$library" | grep -q 'vk_icdGetInstanceProcAddr' || {
+readelf -Ws "$library" | grep 'vk_icdGetInstanceProcAddr' >/dev/null || {
 	echo "$library is not a Vulkan ICD"
 	exit 1
 }

@@ -41,9 +41,16 @@ esac
 	exit 1
 }
 
-for command in podman debugfs realpath; do
-	command -v "$command" >/dev/null || { echo "$command is required"; exit 1; }
-done
+missing=()
+command -v podman >/dev/null || missing+=(podman)
+command -v debugfs >/dev/null || missing+=(e2fsprogs)
+command -v realpath >/dev/null || missing+=(coreutils)
+command -v tar >/dev/null || missing+=(tar)
+command -v gzip >/dev/null || missing+=(gzip)
+if [ "${#missing[@]}" -gt 0 ]; then
+	echo "ERROR: The following dependencies are not installed: ${missing[*]}" >&2
+	exit 1
+fi
 
 repo="$(cd "$(dirname "$0")/.." && pwd)"
 recovery="$(realpath "$recovery")"
@@ -62,38 +69,69 @@ baseline="$repo/baseline/r151"
 brunch="$repo/brunch"
 kernel="$brunch/kernels/6.12/out/arch/x86/boot/bzImage"
 kernel_release_file="$brunch/kernels/6.12/out/include/config/kernel.release"
-if [ ! -f "$baseline/chromeos-install.sh" ] || [ ! -f "$baseline/rootc.img" ]; then
-	command -v wget >/dev/null || {
-		echo "ERROR: The following dependencies are not installed: wget" >&2
+[ -s "$kernel" ] && [ -s "$kernel_release_file" ] || {
+	echo "build the VM kernel with scripts/build-vm-kernel.sh all"
+	exit 1
+}
+
+baseline_ready() {
+	for file in chromeos-install.sh efi_legacy.img efi_secure.img rootc.img; do
+		[ -s "$baseline/$file" ] || return 1
+	done
+	debugfs -R stats "$baseline/rootc.img" 2>/dev/null |
+		grep '^Filesystem magic number: *0xEF53$' >/dev/null
+}
+baseline_missing=false
+baseline_ready || baseline_missing=true
+if $baseline_missing; then
+	missing=()
+	command -v wget >/dev/null || missing+=(wget)
+	if [ "${#missing[@]}" -gt 0 ]; then
+		echo "ERROR: The following dependencies are not installed: ${missing[*]}" >&2
 		exit 1
-	}
+	fi
+fi
+
+kernel_release="$(cat "$kernel_release_file")"
+vulkan_package="$repo/configs/packages/vm-vulkan.tar.gz"
+kernel_package="$repo/configs/packages/kernel-$kernel_release.tar.gz"
+package_ready() { [ -s "$1" ] && tar -tzf "$1" >/dev/null 2>&1; }
+package_ready "$vulkan_package" || bash "$repo/scripts/build-vm-vulkan.sh" --check-dependencies
+package_ready "$kernel_package" || bash "$repo/scripts/build-vm-kernel.sh" --check-dependencies package
+if [ "$target" = vmware ]; then
+	package_ready "$repo/configs/packages/vm-minigbm.tar.gz" || \
+		bash "$repo/scripts/build-minigbm.sh" --check-dependencies
+	package_ready "$repo/configs/packages/vm-tools.tar.gz" || \
+		bash "$repo/scripts/build-vm-tools.sh" --check-dependencies
+fi
+
+if $baseline_missing; then
 	mkdir -p "$baseline"
 	wget -qO- \
 		"https://github.com/sebanc/brunch/releases/download/r151-stable-20260823/brunch_r151_stable_20260823.tar.gz" |
 		tar -xz -C "$baseline"
 fi
-[ -f "$kernel" ] && [ -f "$kernel_release_file" ] || {
-	echo "build the VM kernel with scripts/build-vm-kernel.sh all"
+baseline_ready || {
+	echo "Brunch baseline is incomplete or invalid: $baseline"
 	exit 1
 }
 
-kernel_release="$(cat "$kernel_release_file")"
-if [ ! -f "$repo/configs/packages/vm-vulkan.tar.gz" ]; then
+if ! package_ready "$vulkan_package"; then
 	bash "$repo/scripts/build-vm-vulkan.sh"
 fi
-if [ ! -f "$repo/configs/packages/kernel-$kernel_release.tar.gz" ]; then
+if ! package_ready "$kernel_package"; then
 	bash "$repo/scripts/build-vm-kernel.sh" package
 fi
 packages=(
-	"$repo/configs/packages/kernel-$kernel_release.tar.gz"
-	"$repo/configs/packages/vm-vulkan.tar.gz"
+	"$kernel_package"
+	"$vulkan_package"
 )
 settings="$repo/configs/settings-qemu.cfg"
 if [ "$target" = vmware ]; then
-	if [ ! -f "$repo/configs/packages/vm-minigbm.tar.gz" ]; then
+	if ! package_ready "$repo/configs/packages/vm-minigbm.tar.gz"; then
 		bash "$repo/scripts/build-minigbm.sh"
 	fi
-	if [ ! -f "$repo/configs/packages/vm-tools.tar.gz" ]; then
+	if ! package_ready "$repo/configs/packages/vm-tools.tar.gz"; then
 		bash "$repo/scripts/build-vm-tools.sh"
 	fi
 	packages+=(
@@ -103,7 +141,7 @@ if [ "$target" = vmware ]; then
 	settings="$repo/configs/settings-vmware.cfg"
 fi
 for package in "${packages[@]}"; do
-	[ -f "$package" ] || { echo "required package not found: $package"; exit 1; }
+	package_ready "$package" || { echo "required package is invalid: $package"; exit 1; }
 done
 [ -f "$settings" ] || { echo "settings file not found: $settings"; exit 1; }
 
@@ -162,6 +200,9 @@ podman run --rm --privileged --security-opt label=disable \
 		debugfs -R "dump /packages/vm-crosvm.tar.gz /work/vm-crosvm-check.tar.gz" /work/framework/rootc.img
 		cmp /work/vm-crosvm.tar.gz /work/vm-crosvm-check.tar.gz
 		rm -f "/output/$CROSVM_OUTPUT"
+		if [ "$CROSVM_TARGET" = vmware ]; then
+			rm -f "/output/${CROSVM_OUTPUT%.img}.vmdk" "/output/${CROSVM_OUTPUT%.img}.vmx"
+		fi
 		unshare -m bash -c "umount /proc; exec /work/framework/chromeos-install.sh \
 			-src /work/recovery.bin -dst /output/$CROSVM_OUTPUT -s $CROSVM_SIZE -l"
 		source_start=$(cgpt show -i 8 -b /work/recovery.bin)

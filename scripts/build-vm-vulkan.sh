@@ -2,22 +2,31 @@
 set -euo pipefail
 
 repo="$(cd "$(dirname "$0")/.." && pwd)"
+check_only=false
+if [ "${1:-}" = --check-dependencies ]; then
+	check_only=true
+	shift
+fi
+
+source "$repo/scripts/dependencies.sh"
+need file file; need readelf binutils; need tar tar; need gzip gzip
+
+if [ "$#" -eq 0 ]; then
+	need c++ build-essential
+	[ -f /etc/ssl/certs/ca-certificates.crt ] || missing+=(ca-certificates)
+	need cmake cmake; need git git; need ninja ninja-build; need python3 python3
+	build=true
+else
+	need realpath coreutils
+	build=false
+fi
+require_dependencies
+$check_only && exit 0
+
 stage="$(mktemp -d -p /var/tmp)"
 trap 'rm -rf "$stage"' EXIT
 
-if [ "$#" -eq 0 ]; then
-	missing=()
-	command -v c++ >/dev/null || missing+=(build-essential)
-	[ -f /etc/ssl/certs/ca-certificates.crt ] || missing+=(ca-certificates)
-	command -v cmake >/dev/null || missing+=(cmake)
-	command -v git >/dev/null || missing+=(git)
-	command -v ninja >/dev/null || missing+=(ninja-build)
-	command -v python3 >/dev/null || missing+=(python3)
-	if [ "${#missing[@]}" -gt 0 ]; then
-		echo "ERROR: The following dependencies are not installed: ${missing[*]}" >&2
-		exit 1
-	fi
-
+if $build; then
 	pin=fce27a96526f54c6d31fdccf57629788e3712220
 	git init -q "$stage/swiftshader"
 	git -C "$stage/swiftshader" fetch --depth 1 \

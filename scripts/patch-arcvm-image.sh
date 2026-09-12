@@ -67,7 +67,7 @@ cc -O2 -Wall -Wextra -Werror -o "$patcher" \
 	'ro.hwui.use_vulkan=true' 'ro.hwui.use_vulkan=0   '
 fsck.erofs "$system" >/dev/null
 dump.erofs --cat --path="$property_path" "$system" |
-	grep -q '^ro.hwui.use_vulkan=0   $'
+	grep '^ro.hwui.use_vulkan=0   $' >/dev/null
 
 block_size="$(debugfs -R stats "$rootfs" 2>/dev/null |
 	sed -n 's/^Block size: *//p')"
@@ -94,7 +94,7 @@ done
 debugfs -R "dump -p $system_path $system_check" "$rootfs" >/dev/null 2>&1
 fsck.erofs "$system_check" >/dev/null
 dump.erofs --cat --path="$property_path" "$system_check" |
-	grep -q '^ro.hwui.use_vulkan=0   $'
+	grep '^ro.hwui.use_vulkan=0   $' >/dev/null
 
 echo "Writing the patched image"
 dd if="$rootfs" of="$image" bs=1M iflag=count_bytes oflag=seek_bytes \

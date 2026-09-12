@@ -2033,7 +2033,7 @@ new file mode 100644
 index 0000000..59927fc
 --- /dev/null
 +++ b/vmwgfx.c
-@@ -0,0 +1,284 @@
+@@ -0,0 +1,281 @@
 +/*
 + * Copyright 2018 The FydeOS Authors. All rights reserved.
 + * Use of this source code is governed by a BSD-style license that can be

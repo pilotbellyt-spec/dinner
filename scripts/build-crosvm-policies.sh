@@ -15,13 +15,13 @@ work="$(mktemp -d)"
 trap 'rm -rf "$work"' EXIT
 mkdir -p "$work/policies" "$work/compiler" "$work/package/usr/share/policy/crosvm"
 base=https://chromium.googlesource.com/chromiumos/platform
-curl --fail --location --silent --show-error \
-	"$base/crosvm/+archive/refs/heads/$branch/jail/seccomp/x86_64.tar.gz" \
-	-o "$work/policies.tar.gz"
-curl --fail --location --silent --show-error \
+git clone --quiet --depth 1 --filter=blob:none --sparse --branch "$branch" \
+	"$base/crosvm" "$work/crosvm"
+git -C "$work/crosvm" sparse-checkout set jail/seccomp/x86_64
+cp -a "$work/crosvm/jail/seccomp/x86_64/." "$work/policies/"
+curl --fail --location --silent --show-error --retry 5 --retry-delay 2 \
 	"$base/minijail/+archive/refs/heads/$branch/tools.tar.gz" \
 	-o "$work/compiler.tar.gz"
-tar -xzf "$work/policies.tar.gz" -C "$work/policies"
 tar -xzf "$work/compiler.tar.gz" -C "$work/compiler"
 
 gpu_policy="$work/policies/gpu_common.policy"

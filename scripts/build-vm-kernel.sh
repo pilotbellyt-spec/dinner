@@ -27,6 +27,7 @@ if [ "$mode" = package ] || [ "$mode" = all ]; then
 		INSTALL_MOD_PATH="$stage" modules_install >/dev/null
 	rm -f "$stage/lib/modules/$rel/build" "$stage/lib/modules/$rel/source"
 	out="$here/configs/packages/kernel-$rel.tar.gz"
+	mkdir -p "$(dirname "$out")"
 	tar zcf "$out" -C "$stage" lib --owner=0 --group=0
 	echo "Wrote $out"
 fi

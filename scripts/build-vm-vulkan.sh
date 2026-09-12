@@ -25,6 +25,7 @@ if [ "$#" -eq 0 ]; then
 	git -C "$stage/swiftshader" checkout --detach FETCH_HEAD
 	cmake -S "$stage/swiftshader" -B "$stage/swiftshader/build" -G Ninja \
 		-DREACTOR_BACKEND=Subzero -DSWIFTSHADER_BUILD_TESTS=OFF \
+		-DSWIFTSHADER_WARNINGS_AS_ERRORS=OFF \
 		-DSWIFTSHADER_BUILD_WSI_XCB=OFF -DSWIFTSHADER_BUILD_WSI_WAYLAND=OFF
 	cmake --build "$stage/swiftshader/build" --parallel --target vk_swiftshader
 	library="$stage/swiftshader/build/libvk_swiftshader.so"

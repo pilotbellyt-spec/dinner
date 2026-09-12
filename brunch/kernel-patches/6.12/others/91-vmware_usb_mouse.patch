@@ -10,7 +10,7 @@
 + * position (this is the one that moves while the pointer is not grabbed) and
 + * interface 1 reports RELATIVE motion (only while it is grabbed). ChromeOS
 + * classifies an input device as a mouse only when it has REL_X/REL_Y, and as a
-+ * touchscreen/stylus only with ABS_MT_*/BTN_TOOL_*; interface 0 has neither, so
++ * touchscreen/stylus only with ABS_MT_* or BTN_TOOL_*; interface 0 has neither, so
 + * ChromeOS ignores it outright and an ungrabbed pointer moves nothing.
 + *
 + * Rather than relaying between the two devices the way openFyde's

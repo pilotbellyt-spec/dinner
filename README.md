@@ -1,6 +1,6 @@
-# CrOSVM
+# brunchVM
 
-CrOSVM uses Brunch to build ChromeOS images for QEMU and VMware.
+brunchVM uses Brunch to build ChromeOS images for QEMU and VMware.
 
 Supply Rammus and Reven recovery images. The installer uses Rammus for ChromeOS
 and copies the graphics drivers from Reven. Neither image is included.

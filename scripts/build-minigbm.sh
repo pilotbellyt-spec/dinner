@@ -38,7 +38,8 @@ if ! git -C "$src" apply --reverse --check "$patch" >/dev/null 2>&1; then
 	git -C "$src" apply "$patch"
 fi
 
-make -C "$src" -j"$(nproc)" DRV_VMWGFX=1
+make -C "$src" -j"$(nproc)" OUT="$src" \
+	PKG_CONFIG="${PKG_CONFIG:-pkg-config}" DRV_VMWGFX=1
 lib="$src/libminigbm.so.1.0.0"
 [ -s "$lib" ] || { echo "build produced no library"; exit 1; }
 strings "$lib" | grep "vmwgfx minigbm inited" >/dev/null || { echo "vmwgfx backend missing from build"; exit 1; }

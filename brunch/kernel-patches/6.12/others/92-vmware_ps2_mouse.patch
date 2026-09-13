@@ -1,14 +1,9 @@
 --- a/drivers/input/mouse/vmmouse.c
 +++ b/drivers/input/mouse/vmmouse.c
-@@ -168,19 +168,33 @@
+@@ -168,19 +168,27 @@
  		/* Xorg seems to ignore wheel events on absolute devices */
  		input_report_rel(rel_dev, REL_WHEEL, -(s8)((u8) z));
  
-+		/*
-+		 * The absolute device is a stylus (see vmmouse_init): report
-+		 * the tool as in range and map the buttons onto their stylus
-+		 * equivalents. The relative device keeps plain mouse buttons.
-+		 */
 +		if (pref_dev == abs_dev)
 +			input_report_key(abs_dev, BTN_TOOL_PEN, 1);
  		vmmouse_report_button(psmouse, abs_dev, rel_dev,
@@ -30,28 +25,18 @@
  		input_sync(rel_dev);
  	}
  
-+	/* Take the tool back out of range once the queue is drained. */
 +	input_report_key(abs_dev, BTN_TOOL_PEN, 0);
 +	input_sync(abs_dev);
 +
  	return PSMOUSE_FULL_PACKET;
  }
  
-@@ -428,16 +442,27 @@
+@@ -428,16 +436,18 @@
  		 VMMOUSE_PSNAME, VMMOUSE_VENDOR, VMMOUSE_NAME);
  	abs_dev->phys = priv->phys;
  	abs_dev->name = priv->dev_name;
 -	abs_dev->id.bustype = BUS_I8042;
-+	/*
-+	 * ChromeOS classifies an absolute device reporting BTN_LEFT and no
-+	 * BTN_TOOL_* as a touchscreen: the pointer is then hidden on every
-+	 * click, exactly as it is when a Chromebook's screen is tapped, and
-+	 * the guest is unusable with a mouse. Presenting the device as a
-+	 * stylus keeps the absolute positioning VMware relies on (so clicks
-+	 * land under the host pointer) while Chrome delivers the events as
-+	 * mouse-type events with a pen pointer type, which do not hide the
-+	 * cursor. From openFyde's 14-fix-vmware-mouse.patch.
-+	 */
++	/* Expose the absolute device as a stylus so ChromeOS keeps the cursor. */
 +	abs_dev->id.bustype = BUS_USB;
  	abs_dev->id.vendor = 0x0002;
  	abs_dev->id.product = PSMOUSE_VMMOUSE;

@@ -70,8 +70,7 @@ brunch="$repo/brunch"
 kernel="$brunch/kernels/6.12/out/arch/x86/boot/bzImage"
 kernel_release_file="$brunch/kernels/6.12/out/include/config/kernel.release"
 [ -s "$kernel" ] && [ -s "$kernel_release_file" ] || {
-	echo "build the VM kernel with scripts/build-vm-kernel.sh all"
-	exit 1
+	bash "$repo/scripts/build-vm-kernel.sh" all
 }
 
 baseline_ready() {

@@ -3,7 +3,7 @@ set -euo pipefail
 
 usage() {
 	cat <<EOF
-Usage: $0 --target qemu|vmware --rammus RAMMUS.bin --reven REVEN.bin --output IMAGE.img [--size GB]
+Usage: $0 --target qemu|vmware --octopus OCTOPUS.bin --reven REVEN.bin --output IMAGE.img [--size GB]
 
 Builds a ChromeOS VM image.
 The default size is 32 GB.
@@ -12,14 +12,14 @@ EOF
 }
 
 target=
-recovery=
+octopus=
 reven=
 output=
 size=32
 while [ $# -gt 0 ]; do
 	case "$1" in
 		--target) shift; target="${1:-}";;
-		--rammus) shift; recovery="${1:-}";;
+		--octopus) shift; octopus="${1:-}";;
 		--reven) shift; reven="${1:-}";;
 		--output) shift; output="${1:-}";;
 		--size) shift; size="${1:-}";;
@@ -33,7 +33,7 @@ case "$target" in
 	qemu|vmware) ;;
 	*) echo "--target must be qemu or vmware"; usage;;
 esac
-[ -n "$recovery" ] || { echo "--rammus is required"; usage; }
+[ -n "$octopus" ] || { echo "--octopus is required"; usage; }
 [ -n "$reven" ] || { echo "--reven is required"; usage; }
 [ -n "$output" ] || { echo "--output is required"; usage; }
 [[ "$size" =~ ^[0-9]+$ ]] && [ "$size" -ge 14 ] || {
@@ -53,13 +53,13 @@ if [ "${#missing[@]}" -gt 0 ]; then
 fi
 
 repo="$(cd "$(dirname "$0")/.." && pwd)"
-recovery="$(realpath "$recovery")"
+octopus="$(realpath "$octopus")"
 reven="$(realpath "$reven")"
 output="$(realpath -m "$output")"
-[ -f "$recovery" ] || { echo "recovery image not found: $recovery"; exit 1; }
+[ -f "$octopus" ] || { echo "recovery image not found: $octopus"; exit 1; }
 [ -f "$reven" ] || { echo "recovery image not found: $reven"; exit 1; }
-[ ! "$recovery" -ef "$reven" ] || { echo "supply separate Rammus and Reven images"; exit 1; }
-if [ "$recovery" -ef "$output" ] || [ "$reven" -ef "$output" ]; then
+[ ! "$octopus" -ef "$reven" ] || { echo "supply separate Octopus and Reven images"; exit 1; }
+if [ "$octopus" -ef "$output" ] || [ "$reven" -ef "$output" ]; then
 	echo "--output cannot overwrite a recovery image"
 	exit 1
 fi
@@ -173,7 +173,7 @@ kernel_target="$(debugfs -R 'stat /kernel' "$framework/rootc.img" 2>/dev/null |
 debugfs -w -R "rm /$kernel_target" "$framework/rootc.img" >/dev/null 2>&1 || true
 debugfs -w -R "write $kernel /$kernel_target" "$framework/rootc.img" >/dev/null 2>&1
 debugfs -w -R "sif /$kernel_target mode 0100644" "$framework/rootc.img" >/dev/null 2>&1
-cp --reflink=auto --sparse=auto "$recovery" "$work/recovery.bin"
+cp --reflink=auto --sparse=auto "$octopus" "$work/recovery.bin"
 cp "$settings" "$work/settings.cfg"
 
 builder=localhost/crosvm-image-builder:r151

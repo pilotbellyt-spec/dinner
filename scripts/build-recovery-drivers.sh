@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-rammus_root="${1:?usage: build-recovery-drivers.sh RAMMUS_ROOT.img REVEN.bin OUTPUT_DIR}"
+octopus_root="${1:?usage: build-recovery-drivers.sh OCTOPUS_ROOT.img REVEN.bin OUTPUT_DIR}"
 reven="${2:?Reven recovery image is required}"
 output="$(realpath -m "${3:?output directory is required}")"
 scripts="$(cd "$(dirname "$0")" && pwd)"
 
-release="$(debugfs -R 'cat /etc/lsb-release' "$rammus_root" 2>/dev/null)"
-grep -q '^CHROMEOS_RELEASE_BOARD=rammus\($\|-\)' <<<"$release" || {
-	echo "--rammus must be a Rammus recovery image" >&2
+release="$(debugfs -R 'cat /etc/lsb-release' "$octopus_root" 2>/dev/null)"
+grep -q '^CHROMEOS_RELEASE_BOARD=octopus\($\|-\)' <<<"$release" || {
+	echo "--octopus must be an Octopus recovery image" >&2
 	exit 1
 }
 start="$(cgpt show -i 3 -b "$reven")"

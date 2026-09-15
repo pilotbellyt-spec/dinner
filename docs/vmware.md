@@ -11,7 +11,7 @@ Prepare the Brunch files and VM packages. Supply both recovery images:
 
 ```bash
 ./scripts/install-image.sh --target vmware \
-  --rammus images/rammus.bin --reven images/reven.bin \
+  --octopus images/octopus.bin --reven images/reven.bin \
   --output images/chromeos-vmware.img --size 32
 ```
 
